@@ -99,7 +99,7 @@ image. The app inside that image will listen to port ~8000~.
     spec:
       containers:
       - name: app
-        image: kolibri/bryant:v1
+        image: gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1
         ports:
         - containerPort: 8000
 #+END_SRC
@@ -111,7 +111,176 @@ You can deploy your app by running =kubectl apply=:
 #+BEGIN_SRC bash :tangle no
 kubectl apply -f crash-deployment.yaml
 #+END_SRC
-** 2: 
+
+You should see output that looks like the following:
+
+#+BEGIN_SRC bash :tangle no
+deployment.apps "aron" created
+#+END_SRC
+
+kubectl get pods
+
+To see the status of all pods, you can run =kubectl get pods=:
+#+BEGIN_SRC bash :tangle no
+kubectl get pods
+#+END_SRC
+
+And your output should look something like this:
+#+BEGIN_SRC bash :tangle no
+NAME                    READY     STATUS    RESTARTS   AGE
+aron-774d987dbf-fx7fd   1/1       Running   0          1m
+nora-774q987qos-fx7fd   1/1       Running   0          1m
+asor-134a98blad-fx7fd   1/1       Running   0          1m
+fyod-134n98oynq-fx7fd   1/1       Running   0          1m
+#+END_SRC
+
+If you want to see only the pods that are related to you, you can filter them by
+the label you specified. You can use in the =-l= parameter for that. For this
+deployment, the relevant label is ~app={{ YOUR NAME HERE }}~.
+
+#+BEGIN_SRC bash :tangle no
+kubectl get pods -l app=aron
+#+END_SRC
+
+#+BEGIN_SRC bash :tangle no
+NAME                    READY     STATUS    RESTARTS   AGE
+aron-774d987dbf-fx7fd   1/1       Running   0          1m
+#+END_SRC
+To see more metadata about a pod, such as its image, all the containers under
+it, its status, and its labels, you can use =kubectl describe pod=:
+
+#+BEGIN_SRC bash :tangle no
+kubectl describe pod $POD_NAME
+#+END_SRC
+
+#+BEGIN_SRC bash :tangle no
+(snip)
+    Container ID:   docker://0b150865912578429932a5a231296d2333e38e313e07bb5ab789dcf4bb0de81e
+    Image:          gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1
+    Image ID:       docker-pullable://gcr.io/le-kubernetes-crash-course/kolibri/bryant@sha256:75d4318e740847a86eeb28f9692f17df38355012ea1030a9edaa8446a176dad6
+    Port:           8000/TCP
+(snip)
+Events:
+  Type    Reason                 Age   From                                                       Message
+  ----    ------                 ----  ----                                                       -------
+  Normal  Scheduled              8m    default-scheduler                                          Successfully assigned aron-774d987dbf-fx7fd to gke-kubernetes-hack-session-pool-1-158d4128-d6n3
+  Normal  SuccessfulMountVolume  8m    kubelet, gke-kubernetes-hack-session-pool-1-158d4128-d6n3  MountVolume.SetUp succeeded for volume "default-token-qnthj"
+  Normal  Pulling                8m    kubelet, gke-kubernetes-hack-session-pool-1-158d4128-d6n3  pulling image "gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1"
+  Normal  Pulled                 8m    kubelet, gke-kubernetes-hack-session-pool-1-158d4128-d6n3  Successfully pulled image "gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1"
+  Normal  Created                8m    kubelet, gke-kubernetes-hack-session-pool-1-158d4128-d6n3  Created container
+  Normal  Started                8m    kubelet, gke-kubernetes-hack-session-pool-1-158d4128-d6n3  Started container
+  
+#+END_SRC
+  
+Finally, let's see if our application actually works! The easiest way to make
+HTTP requests to our pod is to use 
+=kubectl port-forward <pod name> <local port>:<pod port>=. That will forward any
+packets from your machine's local port, to the pod's port.
+
+If you're running this in Google Cloud Shell, the invocation is:
+#+BEGIN_SRC bash :tangle no
+kubectl port-forward $POD_NAME 8080:8000
+#+END_SRC
+
+You should get some output that looks like:
+
+#+BEGIN_SRC bash :tangle no
+Forwarding from 127.0.0.1:8080 -> 8000
+#+END_SRC
+
+Then click the "Web Preview" icon in your Cloud Shell window's top right menu
+bar. That should open another window with your app's HTML page.
+
+Congratulations on deploying your first Kubernetes app! You're well on your way on
+making Aron redundant.
+
+** 2: Upgrade your app version
+
+Eventually, despite all your attempts at slowing your developers down, they
+managed to release a new version. They've kindly provided you with a new image
+you can use.
+
+Upgrading your pods to a new image is easy! Edit line 17 of your manifest file
+to =v2= of the app.
+
+Make sure it looks like this:
+
+#+BEGIN_SRC yaml :tangle no
+        image: kolibri/bryant:v2
+#+END_SRC
+
+Note the =v2= at the end, instead of v1 in our original manifest file version.
+Apply that new manifest file:
+
+#+BEGIN_SRC bash :tangle no
+kubectl apply -f crash-deployment.yaml
+#+END_SRC
+
+And then monitor the upgrade process using =kubectl get pods= with the =-w=
+parameter. That makes =kubectl= add additional logging whenever any pod changes
+its status:
+
+#+BEGIN_SRC bash :tangle no
+kubectl get pods -w
+#+END_SRC
+
+Once your app is in the =Running= state, start a port-forward again and then view
+=localhost:8000= in the browser:
+
+#+BEGIN_SRC bash
+# get the list of pods again
+kubectl get pods
+
+# get one of your pod's name
+POD_NAME= 
+
+# forward your local port to the pod's port
+kubectl port-forward $POD_NAME 8080:8000
+
+# in another terminal, run curl
+curl http://localhost:8000
+#+END_SRC
+
+** 3: Read your app's logs
+
+What if trouble is brewing in app-land and you need to examine your app's logs?
+
+There's a command for that. Run =kubectl logs= with your pod's name to see logs
+specific to that pod:
+
+#+BEGIN_SRC bash
+kubectl logs $POD_NAME
+#+END_SRC
+
+Or run it with the =-l= parameter to get the logs of all pods that match that
+app label. In your case, it'll be =-l app={{ YOUR NAME HERE }}=.
+
+#+BEGIN_SRC bash
+kubectl logs -l app=kolibri  # if your name is kolibri
+#+END_SRC
+
+** 4: Get a bash shell
+
+Sometimes you just need a shell to run some sequence of ad-hoc commands, or do
+some exploratory work in production.
+
+=kubectl= has got your back. You can use =kubectl exec= with the =bash= argument
+to get a bash shell.
+
+#+BEGIN_SRC bash
+kubectl exec -it $POD_NAME -c app bash
+#+END_SRC
+
+You can run other commands too, without entering an interactive shell. Let's use
+=ls= as an example:
+
+#+BEGIN_SRC bash
+kubectl exec -it $POD_NAME -c app ls
+#+END_SRC
+
+** 5: Add an environment variable
+
+** 6: Increase the number of replicas
 
 * Appendix
 ** Prep work: Image
