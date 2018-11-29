@@ -13,8 +13,9 @@ working together. They are managed as one unit, and are grouped into one
 server.
 
 We're going to write a Kubernetes manifest file. Open a new file called
-"crash-deployment.yaml", and insert the following code blocks. I'll describe
-what each block does as we go along.
+=crash-deployment.yaml=, and insert the following code blocks. I'll describe
+what each block does as we go along. You can also see the final
+=crash-deployment.yaml= file by opening [[https://github.com/aronasorman/k8s-demo/blob/master/crash-deployment-template.yaml][this template file]] in your browser.
 
 
 At the top of every manifest is an API version declaration. This tells
