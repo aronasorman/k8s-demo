@@ -237,8 +237,7 @@ POD_NAME=
 # forward your local port to the pod's port
 kubectl port-forward $POD_NAME 8080:8000
 
-# in another terminal, run curl
-curl http://localhost:8000
+# Open the Web Preview button on Google Cloud Shell again
 #+END_SRC
 
 ** 3: Read your app's logs
@@ -283,6 +282,118 @@ kubectl exec -it $POD_NAME -c app ls
 ** 6: Increase the number of replicas
 
 * Appendix
-** Prep work: Image
+** App v1
 
-Credits to Lingyi for creating this.
+Credits to @lyw07 for creating the app code.
+
+The app is pretty simple. It serves a static HTML file:
+
+#+BEGIN_SRC html :tangle index.html
+<html>
+
+<head>
+    <title>Kubernetes Hack Session</title>
+</head>
+
+<body>
+    <h1>Crashing Kubernetes</h1>
+    <img src=https://memegenerator.net/img/instances/80246929/you-get-kubernetes-everyone-gets-kubernetes.jpg>
+</body>
+
+</html>
+#+END_SRC
+
+And the app server is written in Python using =SimpleHTTPServer=:
+
+#+BEGIN_SRC python :tangle v1.py
+import SimpleHTTPServer
+import SocketServer
+
+PORT = 8000
+
+Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+
+httpd = SocketServer.TCPServer(("", PORT), Handler)
+
+print "serving at port", PORT
+httpd.serve_forever()
+#+END_SRC
+
+This is all turned into an image by simply installing Python and copying the
+repo to the image. At runtime, we run =v1.py=:
+
+#+BEGIN_SRC dockerfile :tangle v1.dockerfile
+FROM ubuntu:xenial
+
+RUN apt-get update && apt-get install -y python
+
+COPY . /kubehacksession
+WORKDIR /kubehacksession
+
+ENTRYPOINT ["python", "v1.py"]
+#+END_SRC
+
+To build this, run:
+
+#+BEGIN_SRC bash :tangle no
+docker build . -f v1.dockerfile -t gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1
+#+END_SRC
+** App v2
+
+This is a slight modification of v1 of the app. Instead of serving a static HTML
+page, we generate the HTML file dynamically as part of the application's setup
+process. We inject the =NAME= environment variable and then write it to =index.html=.
+
+#+BEGIN_SRC python :tangle v2.py
+import os
+import SimpleHTTPServer
+import SocketServer
+
+PORT = 8000
+
+INDEX_HTML = """ <html>
+
+<head>
+    <title>Kubernetes Hack Session</title>
+</head>
+
+<body>
+    <h1>Hello {}</h1>
+    <img src=https://memegenerator.net/img/instances/80246929/you-get-kubernetes-everyone-gets-kubernetes.jpg>
+</body>
+
+</html>
+"""
+name = os.getenv("NAME", "")
+
+INDEX_HTML = INDEX_HTML.format(name)
+
+with open("index.html", "w") as f:
+    f.write(INDEX_HTML)
+
+Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+
+httpd = SocketServer.TCPServer(("", PORT), Handler)
+
+print "serving at port", PORT
+httpd.serve_forever()
+#+END_SRC
+
+Our dockerfile is mostly the same too, except this time we execute =v2.py= instead
+of =v1.py=.
+
+#+BEGIN_SRC dockerfile :tangle v2.dockerfile
+FROM ubuntu:xenial
+
+RUN apt-get update && apt-get install -y python
+
+COPY . /kubehacksession
+WORKDIR /kubehacksession
+
+ENTRYPOINT ["python", "v2.py"]
+#+END_SRC
+
+And then finally we build the image with a =v2= tag:
+#+BEGIN_SRC bash :tangle no
+docker build . -f v1.dockerfile -t gcr.io/le-kubernetes-crash-course/kolibri/bryant:v2
+#+END_SRC

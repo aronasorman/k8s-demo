@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
       - name: app
-        image: kolibri/bryant:v1
+        image: gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1
         ports:
         - containerPort: 8000
