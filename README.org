@@ -195,6 +195,9 @@ Congratulations on deploying your first Kubernetes app! You're well on your way 
 making Aron redundant.
 
 ** 2: Upgrade your app version
+:PROPERTIES:
+:header-args: :tangle no
+:END:
 
 Eventually, despite all your attempts at slowing your developers down, they
 managed to release a new version. They've kindly provided you with a new image
@@ -241,6 +244,9 @@ kubectl port-forward $POD_NAME 8080:8000
 #+END_SRC
 
 ** 3: Read your app's logs
+:PROPERTIES:
+:header-args: :tangle no
+:END:
 
 What if trouble is brewing in app-land and you need to examine your app's logs?
 
@@ -259,6 +265,9 @@ kubectl logs -l app=kolibri  # if your name is kolibri
 #+END_SRC
 
 ** 4: Get a bash shell
+:PROPERTIES:
+:header-args: :tangle no
+:END:
 
 Sometimes you just need a shell to run some sequence of ad-hoc commands, or do
 some exploratory work in production.
@@ -278,8 +287,82 @@ kubectl exec -it $POD_NAME -c app ls
 #+END_SRC
 
 ** 5: Add an environment variable
+:PROPERTIES:
+:header-args: :tangle no
+:END:
 
+The devs keep devving, and apps need shipping. The devs have read the [[https://12factor.net/][12-factor
+app manifesto]] and decided to use environment variables as configuration knobs.
+
+For this task, you need to add your name as an environment variable that the app
+will read during runtime.
+
+Add a new key under your app container named "env":
+#+BEGIN_SRC yaml
+      containers:
+      - name: app
+        image: gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1
+        env: # <---- this
+
+        ports:
+        - containerPort: 8000
+#+END_SRC
+
+Under the env key is a list of environment variables. Each environment variable
+item has a =name= key and a =value= key.
+
+The =name= key is the name of the environment variable.
+
+The =value= key is the value of that environment variable. Note that this has to
+be a string. If the value can be an int, make sure to wrap it in double quotes ("val").
+
+Use your name as the environment variable. If your name happens to be =aron=, it
+should look like:
+
+#+BEGIN_SRC yaml
+
+      containers:
+      - name: app
+        image: gcr.io/le-kubernetes-crash-course/kolibri/bryant:v1
+        env:
+          - name: NAME
+            value: aron
+        ports:
+        - containerPort: 8000
+#+END_SRC
+
+Redeploy your app again by running =kubectl apply=:
+
+#+BEGIN_SRC bash
+kubectl apply -f crash-deployment.yaml
+#+END_SRC
+
+Your pods will be restarted on most configuration changes, like changes to the
+environment variable list. You should see your old pod killed, and a new pod
+(with a slightly different name) spawn in its place.
+
+Get a bash shell to your new pod, and print out the environment variables using
+=env=. You should see your new environment variable in there!
 ** 6: Increase the number of replicas
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+
+It's time to make our app w3bsca1e. You can easily do this by editing the
+=replicas= key to any positive integer.
+
+Let's set it to 3 as an example:
+
+#+BEGIN_SRC yaml :tangle no
+  replicas: 3
+#+END_SRC
+
+Then redeploy again by running =kubectl apply=:
+
+#+BEGIN_SRC bash
+kubectl apply -f crash-deployment.yaml
+#+END_SRC
+
 
 * Appendix
 ** App v1
@@ -319,7 +402,7 @@ print "serving at port", PORT
 httpd.serve_forever()
 #+END_SRC
 
-This is all turned into an image by simply installing Python and copying the
+This is all turned into an image by installing Python and copying the
 repo to the image. At runtime, we run =v1.py=:
 
 #+BEGIN_SRC dockerfile :tangle v1.dockerfile
