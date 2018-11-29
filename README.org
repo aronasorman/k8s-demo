@@ -364,6 +364,18 @@ Then redeploy again by running =kubectl apply=:
 kubectl apply -f crash-deployment.yaml
 #+END_SRC
 
+Your output should look like the foll
+
+You should now have more than one pod under your name:
+
+#+BEGIN_SRC bash
+$ kubectl get pods
+NAME                    READY     STATUS    RESTARTS   AGE
+aron-6dffdfc675-4k5r9   1/1       Running   0          30s
+aron-6dffdfc675-cw585   1/1       Running   0          1m
+aron-6dffdfc675-zdnjj   1/1       Running   0          30s
+#+END_SRC
+
 
 * Appendix
 ** App v1
