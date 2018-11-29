@@ -206,7 +206,7 @@ to =v2= of the app.
 Make sure it looks like this:
 
 #+BEGIN_SRC yaml :tangle no
-        image: kolibri/bryant:v2
+        image: gcr.io/le-kubernetes-crash-course/kolibri/bryant:v2
 #+END_SRC
 
 Note the =v2= at the end, instead of v1 in our original manifest file version.
