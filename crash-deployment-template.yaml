@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ YOUR NAME HERE }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ YOUR NAME HERE }}
+  template:
+    metadata:
+      labels:
+        app: {{ YOUR NAME HERE }}
+    spec:
+      containers:
+      - name: app
+        image: kolibri/bryant:v1
+        ports:
+        - containerPort: 8000

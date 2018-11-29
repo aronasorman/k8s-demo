@@ -1,0 +1,119 @@
+* LE Kubernetes Demo
+** 1: Deploy a simple app
+:PROPERTIES:
+:header-args: :tangle crash-deployment-template.yaml :padline no
+:END:
+
+Kubernetes focuses on a declarative approach to your deployments. You specify
+how you want your containers to be deployed, from copies, upgrade strategy, CPU
+and RAM needs.
+
+If you recall, a Pod is a group of one or more tightly coupled containers
+working together. They are managed as one unit, and are grouped into one
+server.
+
+We're going to write a Kubernetes manifest file. Open a new file called
+"crash-deployment.yaml", and insert the following code blocks. I'll describe
+what each block does as we go along.
+
+
+At the top of every manifest is an API version declaration. This tells
+Kubernetes what version of the API you'll be using. We'll be using the latest
+stable version.
+
+#+BEGIN_SRC yaml
+apiVersion: apps/v1
+#+END_SRC
+
+the next line should specify the type of Kubernetes object we are describing
+here. In this case, we're describing a [[https://kubernetes.io/docs/concepts/workloads/controllers/deployment/][Deployment]].
+
+A Deployment is a wrapper over [[https://kubernetes.io/docs/concepts/workloads/pods/pod/][Pods]] that add upgrade strategies, rollbacks and replication.
+#+BEGIN_SRC yaml
+kind: Deployment
+#+END_SRC
+
+Now it's time to name our deployment! It's convention to use the name of the
+app, to keep it simple.
+
+For this hack session, *USE YOUR FIRST NAME AS THE APP NAME*. Make sure to
+remove the surrounding double curly brackets.
+
+#+BEGIN_SRC yaml
+metadata:
+  name: {{ YOUR NAME HERE }}
+#+END_SRC
+
+The ~spec~ key's subkeys is where you actually define deployment-specific data,
+such as the number of replicas, and your pod's definition. It seems complex, but
+it'll all come together in the end.
+
+#+BEGIN_SRC yaml
+spec:
+#+END_SRC
+
+Under the =spec= key, the =replica= subkey defines the number of replicas there
+are for the pod this deployment manages. Let's put in 1 replica for now.
+#+BEGIN_SRC yaml
+  replicas: 1
+#+END_SRC
+
+The deployment needs to know what pods it's managing once it spawns them from a
+*pod template*. We tell the deployment what pods it's managing by using the
+=selector= key. Let's have it manage any pods that have *your name* as the
+label. We'll define the corresponding label in the pod template.
+
+#+BEGIN_SRC yaml
+  selector:
+    matchLabels:
+      app: {{ YOUR NAME HERE }}
+#+END_SRC
+
+There are other keys we can put in, such as:
+- =strategy= -- how we replace pods during an upgrade, rollback or pod crash.
+- =minReadySeconds= -- how long to wait before a new pod is considered stalled.
+
+Now we need to define the pod template that this deployment will spawn and
+manage. To define a pod template, you add a =template= key:
+
+#+BEGIN_SRC yaml
+  template:
+#+END_SRC
+
+Remember that deployment selector that tells it which pods it manages? Now we
+add the needed metadata in the pod template for those pods to have that label.
+
+We add a =metadata.labels= key with *your name* as the label.
+
+#+BEGIN_SRC yaml
+    metadata:
+      labels:
+        app: {{ YOUR NAME HERE }}
+#+END_SRC
+
+Finally, after all that boilerplate, we get to the real pod definition! Our pod
+will have one container called app, that's based on the =kolibri/bryant:v1=
+image. The app inside that image will listen to port ~8000~.
+
+#+BEGIN_SRC yaml
+    spec:
+      containers:
+      - name: app
+        image: kolibri/bryant:v1
+        ports:
+        - containerPort: 8000
+#+END_SRC
+
+That's it! This is a minimal Kubernetes manifest file needed to deploy our app.
+
+You can deploy your app by running =kubectl apply=:
+
+#+BEGIN_SRC bash :tangle no
+kubectl apply -f crash-deployment.yaml
+#+END_SRC
+** 2: 
+
+* Appendix
+** Prep work: Image
+
+Credits to Lingyi for creating this.
